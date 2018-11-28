@@ -53,11 +53,11 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CGREEN}-------------------------------------------------------------------------------------------------------------------------${CEND}"
 			echo -e "${CGREEN}${CEND}"
 			# Installation possible sur CentOS
-			OS=$(cat /etc/redhat-release | grep ^NAME | tr -d 'NAME="')
-			if [ "$OS" = "centos" ] && echo $OS
+			OS=$(cat /etc/*-release | grep ^NAME | tr -d 'NAME="')
+			if echo "$OS" |grep -iq "centos"
 			then
 				yum update -y
-				yum install dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release
+				yum install -y dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release
 				yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 				yum install -y docker-ce
 				systemctl start docker
@@ -159,7 +159,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CGREEN}${CEND}"
 			
 			# Variables par défault, peuvent être modifiée
-			export VOLUMES_ROOT_PATH=/home/docker/volumes/
+			export VOLUMES_ROOT_PATH=/home/docker/volumes
 
 
 			read -rp "Voulez modifier la variable ci dessus ? (o/n) : " EXCLUDE
@@ -613,8 +613,8 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - traefik.enable=false
 
 			  freshrss:
-    			    image: linuxserver/freshrss
-    			    container_name: freshrss
+			    image: linuxserver/freshrss
+			    container_name: freshrss
 			    restart: unless-stopped
 			    networks:
 			      - proxy
