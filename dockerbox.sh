@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 CSI="\033["
 CEND="${CSI}0m"
 CRED="${CSI}1;31m"
