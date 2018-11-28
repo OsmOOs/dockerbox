@@ -471,6 +471,18 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - --accessLog.filePath=/var/log/access.log
 			      - --accessLog.filters.statusCodes=400-499
 
+			  watchtower:
+			    # https://hub.docker.com/r/v2tec/watchtower/
+			    image: v2tec/watchtower
+			    container_name: watchtower
+			    restart: always
+			    volumes:
+			      - /var/run/docker.sock:/var/run/docker.sock
+			    environment:
+			      - TZ=Europe/Paris
+			    # Update containers every monday at 5:00 a.m.
+			    command: --schedule "0 0 5 * * 1" --cleanup
+
 			  plex:
 			    container_name: plex
 			    image: plexinc/pms-docker
@@ -684,9 +696,10 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CGREEN}   4) Portainer ${CEND}"
 			echo -e "${CGREEN}   5) Heimball ${CEND}"
 			echo -e "${CGREEN}   6) Nextcloud ${CEND}"
-			echo -e "${CGREEN}   7) Retour Menu Principal ${CEND}"
+			echo -e "${CGREEN}   7) Freshrss ${CEND}"
+			echo -e "${CGREEN}   8) Retour Menu Principal ${CEND}"
 			echo ""
-			read -p "Appli choix [1-7]: " -e -i 1 APPLI
+			read -p "Appli choix [1-8]: " -e -i 1 APPLI
 			echo ""			
 			case $APPLI in
 				1)
@@ -849,7 +862,27 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 
 				;;
 
-				13)
+				7)
+                                if docker ps -a | grep -q freshrss; then
+                                        echo -e "${CGREEN}Freshrss est déjà lancé${CEND}"
+                                        echo ""
+                                        read -p "Appuyer sur la touche Entrer pour retourner au menu"
+                                        clear
+                                        logo.sh
+                                else
+                                        docker-compose up -d freshrss 2>/dev/null
+                                        progress-bar 20
+                                        echo ""
+                                        echo -e "${CGREEN}Installation de freshrss réussie${CEND}"
+                                        echo ""
+                                        read -p "Appuyer sur la touche Entrer pour continuer"
+                                        clear
+                                        logo.sh
+                                fi
+
+                                ;;				
+
+				8)
 				sortir=true
 				dockerbox.sh
 
