@@ -620,7 +620,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - "traefik.enable=true"
 			      - "traefik.docker.network=proxy"
 			      - "traefik.port=80"
-			      - "traefik.frontend.rule=Host:rss.allheberg.xyz"
+			      - "traefik.frontend.rule=Host:rss.${FRESHRSS_FQDN}"
 			      - "traefik.backend=freshrss"
 
 			  freshrss_mariadb:
