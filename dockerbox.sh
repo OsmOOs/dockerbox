@@ -235,6 +235,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CRED}	${CCYAN}PORTAINER_FQDN:${CRED}		portainer.${DOMAIN}							  ${CEND}"
 			echo -e "${CRED}	${CCYAN}NEXTCLOUD_FQDN:${CRED}		nextcloud.${DOMAIN}							  ${CEND}"
 			echo -e "${CRED}	${CCYAN}HEIMDALL_FQDN:${CRED}		heimdall.${DOMAIN}							  ${CEND}"
+			echo -e "${CRED}        ${CCYAN}FRESHRSS_FQDN:${CRED}           rss.${DOMAIN}                                                        ${CEND}"
 			echo -e "${CRED}-------------------------------------------------------------------------------------------------------------------------${CEND}"
 			echo -e "${CGREEN}				VOUS POUVEZ MODIFIER TOUTES CES VARIABLES A VOTRE CONVENANCE				  ${CEND}"	
 			echo -e "${CGREEN}				TAPER ENSUITE SUR LA TOUCHE ENTREE POUR VALIDER 					  ${CEND}"
@@ -248,6 +249,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			export PORTAINER_FQDN=portainer.${DOMAIN}
 			export NEXTCLOUD_FQDN=nextcloud.${DOMAIN}
 			export HEIMDALL_FQDN=heimdall.${DOMAIN}
+			export FRESHRSS_FQDN=rss.${DOMAIN}
 
 			read -rp "Voulez-vous modifier les variables ci dessus ? (o/n) : " EXCLUDE
 			echo""
@@ -340,6 +342,18 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			 				export HEIMDALL_FQDN
 						fi
 
+					echo -e "${CGREEN}${CEND}"
+                                        echo -e "${CCYAN}Sous domaine de freshrss${CEND}"
+                                        read -rp "FRESHRSS_FQDN = " FRESHRSS_FQDN
+
+                                                if [ -n "$FRESHRSS_FQDN" ]
+                                                then
+                                                        export FRESHRSS_FQDN=${FRESHRSS_FQDN}.${DOMAIN}
+                                                else
+                                                        FRESHRSS_FQDN=rss.${DOMAIN}
+                                                        export FRESHRSS_FQDN
+                                                fi
+
 				fi
 
 			## Création d'un fichier .env
@@ -355,6 +369,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			export PORTAINER_FQDN=portainer.${DOMAIN}
 			export NEXTCLOUD_FQDN=nextcloud.${DOMAIN}
 			export HEIMDALL_FQDN=heimdall.${DOMAIN}
+			export FRESHRSS_FQDN=rsss.${DOMAIN}
 
 			cat <<- EOF > /mnt/.env
 			FILMS=$FILMS
@@ -375,6 +390,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			PORTAINER_FQDN=$PORTAINER_FQDN
 			NEXTCLOUD_FQDN=$NEXTCLOUD_FQDN
 			HEIMDALL_FQDN=$HEIMDALL_FQDN
+			FRESHRSS_FQDN=$FRESHRSS_FQDN
 
 			EOF
 
@@ -583,6 +599,44 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - internal
 			    labels:
 			      - traefik.enable=false
+
+			  freshrss:
+    			    image: linuxserver/freshrss
+    			    container_name: freshrss
+			    restart: unless-stopped
+			    networks:
+			      - proxy
+			      - internal
+			    depends_on:
+			      - freshrss_mariadb
+			    volumes:
+			      - /var/run/docker.sock:/var/run/docker.sock
+			      - /home/docker/volumes/freshrss/config:/config
+			    environment:
+			      - TZ=Europe/Paris
+			      - PGID=1001
+			      - PUID=1001
+			    labels:
+			      - "traefik.enable=true"
+			      - "traefik.docker.network=proxy"
+			      - "traefik.port=80"
+			      - "traefik.frontend.rule=Host:rss.allheberg.xyz"
+			      - "traefik.backend=freshrss"
+
+			  freshrss_mariadb:
+			    # https://hub.docker.com/_/mariadb/
+			    image: mariadb
+			    container_name: freshrss_mariadb
+			    restart: unless-stopped
+			    networks:
+			      - internal
+			    volumes:
+			      - /home/docker/volumes/freshrss_mariadb/db:/var/lib/mysql
+			    environment:
+			      - MYSQL_ROOT_PASSWORD=${PASS}
+			      - MYSQL_PASSWORD=${PASS}
+			      - MYSQL_DATABASE=freshrss
+			      - MYSQL_USER=freshrss
 
 			networks:
 			  torrent:
