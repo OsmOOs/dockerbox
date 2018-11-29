@@ -149,7 +149,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
                         if [ -n "$PASS_FRESHRSS" ]
                         then
                                 export PASS_FRESHRSS
-                        f
+                        fi
 			
 			echo ""
 			read -rp "Souhaitez vous utiliser Nextcloud ? (o/n) : " EXCLUDE
