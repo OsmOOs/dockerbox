@@ -1,4 +1,5 @@
 #!/bin/bash
+# Version 1.0
 
 CSI="\033["
 CEND="${CSI}0m"
@@ -42,7 +43,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 	echo -e "${CGREEN}   6) Quitter ${CEND}"
 	echo -e ""
 	until [[ "$PORT_CHOICE" =~ ^[1-6]$ ]]; do
-		read -p "Votre choix [1-6]: " -e -i 1 PORT_CHOICE
+		read -p "Votre choix [1-6]: " PORT_CHOICE
 	done
 
 	case $PORT_CHOICE in
@@ -58,6 +59,10 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			then
 				yum update -y
 				yum install -y dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release
+				cat <<- EOF > /root/.bashrc 
+                                alias vi='vim'
+				alias nano='nano -c'                                
+                                EOF
 				yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 				yum install -y docker-ce
 				systemctl start docker
@@ -129,17 +134,33 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			then
 			 	export MAIL
 			fi
+
+			echo ""
+			echo -e "${CGREEN}${CEND}"
+			read -rp "Choisir un mot de passe pour la base de donnée ROOT = " PASS_ROOT
+			if [ -n "$PASS_ROOT" ]
+                        then
+                                export PASS_ROOT
+                        fi
+
+			echo ""
+                        echo -e "${CGREEN}${CEND}"
+                        read -rp "Choisir un mot de passe pour la base de donnée Freshrss = " PASS_FRESHRSS
+                        if [ -n "$PASS_FRESHRSS" ]
+                        then
+                                export PASS_FRESHRSS
+                        f
 			
 			echo ""
 			read -rp "Souhaitez vous utiliser Nextcloud ? (o/n) : " EXCLUDE
 			if [[ "$EXCLUDE" = "o" ]] || [[ "$EXCLUDE" = "O" ]]; then
 	
 				echo -e "${CGREEN}${CEND}"
-				read -rp "Choisir un mot de passe pour la base de donnée MARIADB = " PASS
+				read -rp "Choisir un mot de passe pour la base de donnée nextcloud = " PASS_NEXTCLOUD
 
-				if [ -n "$PASS" ]
+				if [ -n "$PASS_NEXTCLOUD" ]
 				then
-			 		export PASS
+			 		export PASS_NEXTCLOUD
 					echo -e "${CGREEN}Vous devrez lancer nextcloud à partir des applications choix 3${CEND}"
 				fi
 			fi
@@ -381,7 +402,9 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			MAIL=$MAIL
 			USERNAME=$USERNAME
 			DOMAIN=$DOMAIN
-			PASS=$PASS
+			PASS_NEXTCLOUD=$PASS_NEXTCLOUD
+			PASS_ROOT=$PASS_ROOT
+			PASS_FRESHRSS=$PASS_FRESHRSS
 			PROXY_NETWORK=$PROXY_NETWORK
 			TRAEFIK_DASHBOARD_URL=$TRAEFIK_DASHBOARD_URL
 			PLEX_FQDN=$PLEX_FQDN
@@ -501,7 +524,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			    ports:
 			      - 32400:32400
 			    volumes:
-			      - ${VOLUMES_ROOT_PATH}/Medias:/mnt
+			      - ${VOLUMES_ROOT_PATH}/rutorrent/data:/data
 			      - ${VOLUMES_ROOT_PATH}/plex/config:/config
 			      - /dev/shm:/transcode
 			    networks:
@@ -519,8 +542,8 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - traefik.docker.network=${PROXY_NETWORK}
 			      - traefik.frontend.auth.basic=${VAR}
 			    volumes:
-			      - ${VOLUMES_ROOT_PATH}/Medias/${SERIES}:/tv
-			      - ${VOLUMES_ROOT_PATH}/rutorrent/data/torrents:/downloads
+			      - ${VOLUMES_ROOT_PATH}/rutorrent/data/${SERIES}:/tv
+			      - ${VOLUMES_ROOT_PATH}/rutorrent/data:/downloads
 			      - ${VOLUMES_ROOT_PATH}/medusa/config:/config
 			    environment:
 			      - /etc/localtime:/etc/localtime:ro
@@ -542,16 +565,12 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - traefik.docker.network=${PROXY_NETWORK}
 			      - traefik.frontend.auth.basic=${VAR}
 			    environment:
-			      - FILEBOT_RENAME_METHOD=symlink
-			      - FILEBOT_RENAME_MOVIES={n} ({y})/{n} ({y})
-			      - FILEBOT_RENAME_SERIES={n}/Saison {s}/{n} - {s00e00} - {t}
 			      - UID=1001
 			      - GID=1001
 			      - DHT_RTORRENT=on
 			      - PORT_RTORRENT=6881
 			    volumes:
-			      - ${VOLUMES_ROOT_PATH}/rutorrent/data/torrents:/data/torrents
-			      - ${VOLUMES_ROOT_PATH}/Medias:/mnt/Media
+			      - ${VOLUMES_ROOT_PATH}/rutorrent/data/Media:/data/Media
 			      - ${VOLUMES_ROOT_PATH}/rutorrent/data:/data
 			      - ${VOLUMES_ROOT_PATH}/rutorrent/config:/config
 			    networks:
@@ -602,9 +621,9 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			    container_name: mariadb
 			    environment:
 			      - MYSQL_USER=nextcloud
-			      - MYSQL_PASSWORD=${PASS}
+			      - MYSQL_PASSWORD=${PASS_NEXCLOUD}
 			      - MYSQL_DATABASE=nextcloud
-			      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+			      - MYSQL_ROOT_PASSWORD=${PASS_ROOT}
 			    volumes:
 			      - ${VOLUMES_ROOT_PATH}/mariadb:/var/lib/mysql
 			    networks:
@@ -645,8 +664,8 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			    volumes:
 			      - /home/docker/volumes/freshrss_mariadb/db:/var/lib/mysql
 			    environment:
-			      - MYSQL_ROOT_PASSWORD=${PASS}
-			      - MYSQL_PASSWORD=${PASS}
+			      - MYSQL_ROOT_PASSWORD=${PASS_ROOT}
+			      - MYSQL_PASSWORD=${PASS_FRESHRSS}
 			      - MYSQL_DATABASE=freshrss
 			      - MYSQL_USER=freshrss
 
@@ -664,7 +683,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CCYAN}					VERIFICATION DE LA CONFORMITE DU DOCKER-COMPOSE					  ${CEND}"
 			echo -e "${CCYAN}-------------------------------------------------------------------------------------------------------------------------${CEND}"
 			read -p "Appuyer sur la touche Entrer pour continuer"
-			nano /mnt/docker-compose.yml
+			vi /mnt/docker-compose.yml
 			progress-bar 20
 			cd /mnt
 			docker-compose up -d traefik 2>/dev/null
@@ -699,7 +718,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CGREEN}   7) Freshrss ${CEND}"
 			echo -e "${CGREEN}   8) Retour Menu Principal ${CEND}"
 			echo ""
-			read -p "Appli choix [1-8]: " -e -i 1 APPLI
+			read -p "Appli choix [1-8]: "  APPLI
 			echo ""			
 			case $APPLI in
 				1)
@@ -847,7 +866,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 				echo -e "${CRED}---------------------------------------------------------${CEND}"
 				echo -e "${CGREEN}    	- identifiants (Ce que vous voulez)		 ${CEND}"
 				echo -e "${CGREEN}    	- Utilisateur base de donnée: nextcloud		 ${CEND}"
-				echo -e "${CGREEN}    	- passwd: $PASS					 ${CEND}"
+				echo -e "${CGREEN}    	- passwd: $PASS_NEXTCLOUD			 ${CEND}"
 				echo -e "${CGREEN}    	- Nom de la base de donnée: nextcloud		 ${CEND}"
 				echo -e "${CGREEN}    	- hote: mariadb					 ${CEND}"
 				echo -e "${CRED}---------------------------------------------------------${CEND}"
@@ -911,7 +930,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 		echo -e "${CGREEN}   4) Configuration Fail2ban && Portsentry && Iptables${CEND}"
 
 		echo -e ""
-			read -p "Outil choix [1-4]: " -e -i 1 OUTIL
+			read -p "Outil choix [1-4]: " OUTIL
 			echo ""			
 			case $OUTIL in
 			
@@ -1332,6 +1351,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			;;
 
 		6)
+		sortir=true
 		exit 0
 
 		;;
