@@ -59,10 +59,6 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			then
 				yum update -y
 				yum install -y dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release
-				cat <<- EOF > /root/.bashrc 
-                                alias vi='vim'
-				alias nano='nano -c'                                
-                                EOF
 				yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 				yum install -y docker-ce
 				systemctl start docker
@@ -390,7 +386,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			export PORTAINER_FQDN=portainer.${DOMAIN}
 			export NEXTCLOUD_FQDN=nextcloud.${DOMAIN}
 			export HEIMDALL_FQDN=heimdall.${DOMAIN}
-			export FRESHRSS_FQDN=rsss.${DOMAIN}
+			export FRESHRSS_FQDN=rss.${DOMAIN}
 
 			cat <<- EOF > /mnt/.env
 			FILMS=$FILMS
@@ -651,7 +647,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - "traefik.enable=true"
 			      - "traefik.docker.network=proxy"
 			      - "traefik.port=80"
-			      - "traefik.frontend.rule=Host:rss.${FRESHRSS_FQDN}"
+			      - "traefik.frontend.rule=Host:${FRESHRSS_FQDN}"
 			      - "traefik.backend=freshrss"
 
 			  freshrss_mariadb:
