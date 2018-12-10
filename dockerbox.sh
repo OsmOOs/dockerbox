@@ -58,7 +58,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			if echo "$OS" |grep -iq "centos"
 			then
 				yum update -y
-				yum install -y dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release
+				yum install -y dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release httpd-tools
 				yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 				yum install -y docker-ce
 				systemctl start docker
@@ -91,8 +91,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CCYAN}-------------------------------------------------------------------------------------------------------------------------${CEND}"
 			echo -e "${CCYAN}					PRECISONS SUR LES VARIABLES							  ${CEND}"
 			echo -e "${CCYAN}-------------------------------------------------------------------------------------------------------------------------${CEND}"
-			echo -e "${CGREEN}		Cette étape permet une installation personnalisée configurable à vos besoins				 ${CEND}"	
-			echo -e "${CGREEN}		Une fois les variables définies, la configuration sera complètement automatisée 			 ${CEND}"
+			echo -e "${CGREEN}		 			MISE EN PLACE DES VARIABLES							 ${CEND}"
 			echo -e "${CRED}-------------------------------------------------------------------------------------------------------------------------${CEND}"
 			echo -e "${CCYAN}															 ${CEND}"
 			echo -e "${CCYAN}				UNE ATTENTION PARTICULIERE EST REQUISE POUR CETTE ETAPE					 ${CEND}"
@@ -252,7 +251,9 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CRED}	${CCYAN}PORTAINER_FQDN:${CRED}		portainer.${DOMAIN}							  ${CEND}"
 			echo -e "${CRED}	${CCYAN}NEXTCLOUD_FQDN:${CRED}		nextcloud.${DOMAIN}							  ${CEND}"
 			echo -e "${CRED}	${CCYAN}HEIMDALL_FQDN:${CRED}		heimdall.${DOMAIN}							  ${CEND}"
-			echo -e "${CRED}        ${CCYAN}FRESHRSS_FQDN:${CRED}           rss.${DOMAIN}                                                        ${CEND}"
+			echo -e "${CRED}        ${CCYAN}FRESHRSS_FQDN:${CRED}           rss.${DOMAIN}                                                        	  ${CEND}"
+			echo -e "${CRED}        ${CCYAN}KOEL_FQDN:${CRED}           	koel.${DOMAIN}                                                        	  ${CEND}"
+			echo -e "${CRED}        ${CCYAN}VPN_FQDN:${CRED}           	vpn.${DOMAIN}                                                                ${CEND}"
 			echo -e "${CRED}-------------------------------------------------------------------------------------------------------------------------${CEND}"
 			echo -e "${CGREEN}				VOUS POUVEZ MODIFIER TOUTES CES VARIABLES A VOTRE CONVENANCE				  ${CEND}"	
 			echo -e "${CGREEN}				TAPER ENSUITE SUR LA TOUCHE ENTREE POUR VALIDER 					  ${CEND}"
@@ -267,7 +268,9 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			export NEXTCLOUD_FQDN=nextcloud.${DOMAIN}
 			export HEIMDALL_FQDN=heimdall.${DOMAIN}
 			export FRESHRSS_FQDN=rss.${DOMAIN}
-
+			export KOEL_FQDN=koel.${DOMAIN}
+			export VPN_FQDN=vpn.${DOMAIN}
+	
 			read -rp "Voulez-vous modifier les variables ci dessus ? (o/n) : " EXCLUDE
 			echo""
 				if [[ "$EXCLUDE" = "o" ]] || [[ "$EXCLUDE" = "O" ]]; then
@@ -371,6 +374,29 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
                                                         export FRESHRSS_FQDN
                                                 fi
 
+					echo -e "${CGREEN}${CEND}"
+                                        echo -e "${CCYAN}Sous domaine de koel${CEND}"
+                                        read -rp "KOEL_FQDN = " KOEL_FQDN
+
+                                                if [ -n "$KOEL_FQDN" ]
+                                                then
+                                                        export KOEL_FQDN=${KOEL_FQDN}.${DOMAIN}
+                                                else
+                                                        KOEL_FQDN=koel.${DOMAIN}
+                                                        export KOEL_FQDN
+                                                fi
+					
+					echo -e "${CGREEN}${CEND}"
+                                        echo -e "${CCYAN}Sous domaine de vpn${CEND}"
+                                        read -rp "VPN_FQDN = " VPN_FQDN
+
+                                                if [ -n "$VPN_FQDN" ]
+                                                then
+                                                        export VPN_FQDN=${VPN_FQDN}.${DOMAIN}
+                                                else
+                                                        VPN_FQDN=vpn.${DOMAIN}
+                                                        export VPN_FQDN
+                                                fi
 				fi
 
 			## Création d'un fichier .env
@@ -387,6 +413,8 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			export NEXTCLOUD_FQDN=nextcloud.${DOMAIN}
 			export HEIMDALL_FQDN=heimdall.${DOMAIN}
 			export FRESHRSS_FQDN=rss.${DOMAIN}
+			export KOEL_FQDN=koel.${DOMAIN}
+			export VPN_FQDN=vpn.${DOMAIN}
 
 			cat <<- EOF > /mnt/.env
 			FILMS=$FILMS
@@ -410,6 +438,8 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			NEXTCLOUD_FQDN=$NEXTCLOUD_FQDN
 			HEIMDALL_FQDN=$HEIMDALL_FQDN
 			FRESHRSS_FQDN=$FRESHRSS_FQDN
+			KOEL_FQDN=$KOEL_FQDN
+			VPN_FQDN=$VPN_FQDN
 
 			EOF
 
@@ -418,10 +448,12 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			cat <<- EOF > ${VOLUMES_ROOT_PATH}/traefik/traefik.toml
 			defaultEntryPoints = ["https","http"]
 			InsecureSkipVerify = true
+			logLevel = "ERROR" #DEBUG, INFO, WARN, ERROR, FATAL, PANIC
 
 			[api]
 			entryPoint = "traefik"
 			dashboard = true
+			debug = true
 
 			[entryPoints]
 			  [entryPoints.http]
@@ -494,7 +526,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			    # https://hub.docker.com/r/v2tec/watchtower/
 			    image: v2tec/watchtower
 			    container_name: watchtower
-			    restart: always
+			    restart: unless-stopped
 			    volumes:
 			      - /var/run/docker.sock:/var/run/docker.sock
 			    environment:
@@ -604,7 +636,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - traefik.port=80
 			      - traefik.frontend.rule=Host:${NEXTCLOUD_FQDN}
 			      - traefik.enable=true
-			      - traefik.docker.network=traefik_proxy
+			      - traefik.docker.network=${PROXY_NETWORK}
 			      - traefik.frontend.auth.basic=${VAR}
 			    depends_on:
 			      - mariadb
@@ -638,14 +670,14 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			      - freshrss_mariadb
 			    volumes:
 			      - /var/run/docker.sock:/var/run/docker.sock
-			      - /home/docker/volumes/freshrss/config:/config
+			      - ${VOLUMES_ROOT_PATH}/freshrss/config:/config
 			    environment:
 			      - TZ=Europe/Paris
 			      - PGID=1001
 			      - PUID=1001
 			    labels:
 			      - "traefik.enable=true"
-			      - "traefik.docker.network=proxy"
+			      - "traefik.docker.network=${PROXY_NETWORK}"
 			      - "traefik.port=80"
 			      - "traefik.frontend.rule=Host:${FRESHRSS_FQDN}"
 			      - "traefik.backend=freshrss"
@@ -658,12 +690,23 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			    networks:
 			      - internal
 			    volumes:
-			      - /home/docker/volumes/freshrss_mariadb/db:/var/lib/mysql
+			      - ${VOLUMES_ROOT_PATH}/freshrss_mariadb/db:/var/lib/mysql
 			    environment:
 			      - MYSQL_ROOT_PASSWORD=${PASS_ROOT}
 			      - MYSQL_PASSWORD=${PASS_FRESHRSS}
 			      - MYSQL_DATABASE=freshrss
 			      - MYSQL_USER=freshrss
+
+			  openvpn:
+			    image: kylemanna/openvpn
+			    container_name: openvpn
+			    volumes:
+ 			      - ${VOLUMES_ROOT_PATH}/openvpn/data:/etc/openvpn
+			    ports:
+			      - "1194:1194/udp"
+			    cap_add:
+			      - NET_ADMIN
+			    restart: always
 
 			networks:
 			  torrent:
@@ -683,6 +726,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			progress-bar 20
 			cd /mnt
 			docker-compose up -d traefik 2>/dev/null
+			docker-compose up -d watchtower 2>/dev/null
 			echo ""
 			echo -e "${CCYAN}La configuration des variables s'est parfaitement déroulée ${CEND}"
 			echo ""
@@ -712,9 +756,11 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CGREEN}   5) Heimball ${CEND}"
 			echo -e "${CGREEN}   6) Nextcloud ${CEND}"
 			echo -e "${CGREEN}   7) Freshrss ${CEND}"
-			echo -e "${CGREEN}   8) Retour Menu Principal ${CEND}"
+			echo -e "${CGREEN}   8) Koel ${CEND}"
+			echo -e "${CGREEN}   9) VPN ${CEND}"
+			echo -e "${CGREEN}   10) Retour Menu Principal ${CEND}"
 			echo ""
-			read -p "Appli choix [1-8]: "  APPLI
+			read -p "Appli choix [1-10]: "  APPLI
 			echo ""			
 			case $APPLI in
 				1)
@@ -896,8 +942,57 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
                                 fi
 
                                 ;;				
-
+				
 				8)
+                                if docker ps -a | grep -q koel; then
+                                        echo -e "${CGREEN}Koel est déjà lancé${CEND}"
+                                        echo ""
+                                        read -p "Appuyer sur la touche Entrer pour retourner au menu"
+                                        clear
+                                        logo.sh
+                                else
+                                        docker-compose up -d koel 2>/dev/null
+                                        progress-bar 20
+                                        echo ""
+                                        echo -e "${CGREEN}Installation de koel réussie${CEND}"
+                                        echo ""
+                                        read -p "Appuyer sur la touche Entrer pour continuer"
+                                        clear
+                                        logo.sh
+                                fi
+
+                                ;;				
+
+				9)
+                                if docker ps -a | grep -q openvpn; then
+                                        echo -e "${CGREEN}Openvpn est déjà lancé${CEND}"
+                                        echo ""
+                                        read -p "Appuyer sur la touche Entrer pour retourner au menu"
+                                        clear
+                                        logo.sh
+                                else
+                                        mkdir -p ${VOLUMES_ROOT_PATH}/openvpn
+					docker run -v ${VOLUMES_ROOT_PATH}/openvpn/data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u udp://$VPN_FQDN
+					docker run -v ${VOLUMES_ROOT_PATH}/openvpn/data:/etc/openvpn --rm -it kylemanna/openvpn ovpn_initpki
+					docker-compose up -d openvpn 2>/dev/null
+                                        progress-bar 20
+					echo ""
+                                        echo -e "${CGREEN}Création nouvel utilisateur${CEND}"
+					echo -e "${CGREEN}Nom d'utilisateur pour l'authentification WEB ${CEND}"
+                        		read -rp "USERNAME_VPN = " USERNAME_VPN
+					docker run -v ${VOLUMES_ROOT_PATH}/openvpn/data:/etc/openvpn --rm -it kylemanna/openvpn easyrsa build-client-full $USERNAME_VPN nopass
+					docker run -v ${VOLUMES_ROOT_PATH}/openvpn/data:/etc/openvpn --rm kylemanna/openvpn ovpn_getclient $USERNAME_VPN > /tmp/${USERNAME_VPN}.ovpn
+                                        echo ""
+                                        echo -e "${CGREEN}Installation de koel réussie${CEND}"
+                                        echo ""
+                                        read -p "Appuyer sur la touche Entrer pour continuer"
+                                        clear
+                                        logo.sh
+                                fi
+
+                                ;;
+
+				10)
 				sortir=true
 				dockerbox.sh
 
@@ -924,9 +1019,10 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 		echo -e "${CGREEN}   2) Modifier l'utilisateur pour l'authentification web${CEND}"
 		echo -e "${CGREEN}   3) Modification du port ssh && Mise en place serveur mail${CEND}"
 		echo -e "${CGREEN}   4) Configuration Fail2ban && Portsentry && Iptables${CEND}"
+		echo -e "${CGREEN}   5) Retour Menu Principal ${CEND}"
 
 		echo -e ""
-			read -p "Outil choix [1-4]: " OUTIL
+			read -p "Outil choix [1-5]: " OUTIL
 			echo ""			
 			case $OUTIL in
 			
@@ -953,7 +1049,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 				echo ""
 				echo -e "${CCYAN}Cette étape permet de changer l'identification de vos applis docker ${CEND}"
 				echo ""
-				read -rp "Taper le nom de l'utilisateur " USER
+				read -rp "Taper le nom de l'utilisateur: " USER
 				PASSWD=$(htpasswd -c /etc/apache2/.htpasswd $USER 2>/dev/null)
 				PASSWD=$(sed -e 's/\$/\$$/g' /etc/apache2/.htpasswd 2>/dev/null)
 				sed -i -e "s|traefik.frontend.auth.basic=.*|traefik.frontend.auth.basic=$PASSWD|g" /mnt/docker-compose.yml
@@ -1003,7 +1099,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 				echo -e "${CCYAN}-------------------------------------------------------------------------------------------------------------------------${CEND}"
 				echo -e "${CGREEN}${CEND}"
 				read -p "Appuyer sur la touche Entrer pour continuer"
-				apt install -f postfix mailutils logwatch -y
+				yum install -f postfix mailutils logwatch -y
 				echo "root: $MAIL" >> /etc/aliases
 				newaliases
 				echo "echo 'Acces Shell Root le ' \`date\` \`who\` | mail -s 'Connexion serveur via root' root" >> /root/.bashrc
@@ -1094,7 +1190,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 				echo -e "${CRED}---------------------------------------------------------${CEND}"
 				read -p "Appuyer sur la touche Entrer pour continuer"
 				export $(xargs </mnt/.env)
-				apt install fail2ban portsentry -y
+				yum install fail2ban portsentry -y
 				echo ""
 				read -rp "Quel est votre port ssh ? " PORT
 				echo "" 
@@ -1217,7 +1313,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 				chmod +x /etc/iptables
 				/etc/iptables clear
 				/etc/iptables start
-				apt install iptables-persistent -y
+				yum install iptables-persistent -y
 				progress-bar 20
 				echo ""
 				echo -e "${CCYAN}Iptables a été configuré avec succés${CEND}"
@@ -1227,6 +1323,11 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 				clear
 				logo.sh
 				;;
+
+				5) # quitter
+                                sortir=true
+                                dockerbox.sh
+                                ;;
 
 			esac
 			done
@@ -1346,8 +1447,8 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			done
 			;;
 
-		6)
-		sortir=true
+		6) # sortir
+		PORT_CHOICE=""
 		exit 0
 
 		;;
