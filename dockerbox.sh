@@ -58,7 +58,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			if echo "$OS" |grep -iq "centos"
 			then
 				yum update -y
-				yum install -y dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release httpd-tools
+				yum install -y dialog sudo ca-certificates curl nano htop yum-utils device-mapper-persistent-data lvm2 epel-release httpd-tools sysstat
 				yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 				yum install -y docker-ce
 				systemctl start docker
@@ -552,7 +552,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
       			      - traefik.frontend.rule=Host:sickrage.allheberg.xyz
       			      - traefik.port=8081
       			      - traefik.docker.network=traefik_proxy
-      			      - traefik.frontend.auth.basic=osmos:$$apr1$$cfkA07Hh$$lr5hBNoOPVwlIjWYSPT061
+			      - traefik.frontend.auth.basic=${VAR}
     			    volumes:
       			      - /home/docker/volumes/rutorrent/data/:/tv
       			      - /home/docker/volumes/rutorrent/data:/downloads
@@ -740,11 +740,10 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 			echo -e "${CGREEN}   5) Heimball ${CEND}"
 			echo -e "${CGREEN}   6) Nextcloud ${CEND}"
 			echo -e "${CGREEN}   7) Freshrss ${CEND}"
-			echo -e "${CGREEN}   8) Koel ${CEND}"
-			echo -e "${CGREEN}   9) VPN ${CEND}"
-			echo -e "${CGREEN}   10) Retour Menu Principal ${CEND}"
+			echo -e "${CGREEN}   8) VPN ${CEND}"
+			echo -e "${CGREEN}   9) Retour Menu Principal ${CEND}"
 			echo ""
-			read -p "Appli choix [1-10]: "  APPLI
+			read -p "Appli choix [1-9]: "  APPLI
 			echo ""			
 			case $APPLI in
 				1)
@@ -928,26 +927,6 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
                                 ;;				
 				
 				8)
-                                if docker ps -a | grep -q koel; then
-                                        echo -e "${CGREEN}Koel est déjà lancé${CEND}"
-                                        echo ""
-                                        read -p "Appuyer sur la touche Entrer pour retourner au menu"
-                                        clear
-                                        logo.sh
-                                else
-                                        docker-compose up -d koel 2>/dev/null
-                                        progress-bar 20
-                                        echo ""
-                                        echo -e "${CGREEN}Installation de koel réussie${CEND}"
-                                        echo ""
-                                        read -p "Appuyer sur la touche Entrer pour continuer"
-                                        clear
-                                        logo.sh
-                                fi
-
-                                ;;				
-
-				9)
                                 if docker ps -a | grep -q openvpn; then
                                         echo -e "${CGREEN}Openvpn est déjà lancé${CEND}"
                                         echo ""
@@ -967,7 +946,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 					docker run -v ${VOLUMES_ROOT_PATH}/openvpn/data:/etc/openvpn --rm -it kylemanna/openvpn easyrsa build-client-full $USERNAME_VPN nopass
 					docker run -v ${VOLUMES_ROOT_PATH}/openvpn/data:/etc/openvpn --rm kylemanna/openvpn ovpn_getclient $USERNAME_VPN > /tmp/${USERNAME_VPN}.ovpn
                                         echo ""
-                                        echo -e "${CGREEN}Installation de koel réussie${CEND}"
+                                        echo -e "${CGREEN}Installation de openvpn réussie${CEND}"
                                         echo ""
                                         read -p "Appuyer sur la touche Entrer pour continuer"
                                         clear
@@ -976,7 +955,7 @@ echo -e "${CCYAN}INSTALLATION${CEND}"
 
                                 ;;
 
-				10)
+				9)
 				sortir=true
 				dockerbox.sh
 
