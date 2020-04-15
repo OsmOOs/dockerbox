@@ -12,4 +12,6 @@ mv dockerbox.sh logo.sh /usr/local/bin
 mv iptables /etc/iptables  
 cd /usr/local/bin  
 chmod +x dockerbox.sh logo.sh  
-dockerbox.sh  
+dockerbox.sh 
+
+test
